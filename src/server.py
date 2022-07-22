@@ -42,9 +42,9 @@ origins:str = [
     "http://localhost:8000",
     "https://localhost:8000",
 ];
-app.add_middleware(
-    HTTPSRedirectMiddleware
-);
+# app.add_middleware(
+#     HTTPSRedirectMiddleware
+# );
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,

@@ -1,0 +1,10 @@
+version: '3'
+
+services:
+  api-youtube:
+    container_name: api-youtube
+    build:
+      context: .
+    ports:
+    - 90:8000
+    restart: unless-stopped

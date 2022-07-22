@@ -42,7 +42,7 @@ class DownloadYouTube:
         self.__minutos :int = minutos;
         self.__segundos:int = segundos;
         if((dias+horas+minutos+segundos) <= 0):
-            self.__tempo_total:int = 15*60;
+            self.__tempo_total:int = 1*60;
         else:
             self.__tempo_total:int = (
                 (self.__segundos) +
@@ -51,7 +51,7 @@ class DownloadYouTube:
                 (60*60*24*self.__dias)
             );
             if(self.__tempo_total <= 0):
-                self.__tempo_total:int = 15*60;
+                self.__tempo_total:int = 1*60;
         self.__check_internet = CheckInternet();
         
     def remover(self,caminho_do_arquivo:str) -> None:

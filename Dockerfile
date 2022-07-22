@@ -4,10 +4,16 @@ FROM python:3.8-slim-buster
 
 WORKDIR /app
 
-COPY requirements.txt requirements.txt
+COPY requirements.txt requirements.txt 
 
-RUN pip3 install -r requirements.txt
+RUN python -m pip install --upgrade pip
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y git
+RUN pip install -r requirements.txt 
+RUN python -m pip install git+https://github.com/pytube/pytube
+
 
 COPY . .
 
-CMD ["uvicorn", "src.server:app", "--host", "0.0.0.0", "--port", "8080", "--reload", "--debug", "--workers", "3"]
+CMD ["uvicorn", "src.server:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--debug", "--workers", "3"]
