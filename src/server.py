@@ -20,6 +20,9 @@ from fastapi import FastAPI
 from src.routers import router_youtube
 from src.jobs.check_internet import CheckInternet
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.httpsredirect import (
+    HTTPSRedirectMiddleware
+)
 #-----------------------
 # FastApi
 #-----------------------
@@ -39,7 +42,9 @@ origins:str = [
     "http://localhost:8000",
     "https://localhost:8000",
 ];
-
+app.add_middleware(
+    HTTPSRedirectMiddleware
+);
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
