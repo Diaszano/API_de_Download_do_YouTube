@@ -8,7 +8,6 @@ import zipfile
 from time import sleep
 import moviepy.editor as mp
 from datetime import datetime
-from src.schemas import schemas
 from pytube import Playlist, YouTube
 from typing import List, NoReturn, Union
 from src.jobs.check_internet import CheckInternet

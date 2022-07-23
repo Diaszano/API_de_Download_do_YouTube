@@ -20,9 +20,9 @@ from fastapi import FastAPI
 from src.routers import router_youtube
 from src.jobs.check_internet import CheckInternet
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.httpsredirect import (
-    HTTPSRedirectMiddleware
-)
+# from fastapi.middleware.httpsredirect import (
+#     HTTPSRedirectMiddleware
+# )
 #-----------------------
 # FastApi
 #-----------------------
