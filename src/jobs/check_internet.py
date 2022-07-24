@@ -6,8 +6,6 @@ Este módulo contêm o verificador de internet.
 # BIBLIOTECAS
 #-----------------------
 import re
-import asyncio
-import aiohttp
 import requests
 from typing import List, Union
 #-----------------------
@@ -54,7 +52,7 @@ class CheckInternet:
         self.__MAX:int = 100;
         self.__URL:str = r'https://www.google.com/';
     
-    async def pegar_url(self,url:str) -> Union[str,None]:
+    def pegar_url(self,url:str) -> Union[str,None]:
         """Pegar URL
         
         Aqui nós verificaremos se existe uma URL na string
@@ -72,7 +70,7 @@ class CheckInternet:
         if(list_url):
             return list_url[0][0];
     
-    async def verificar_link(self,url:str) -> bool:
+    def verificar_link(self,url:str) -> bool:
         """Verificar Link
         
         Aqui nós verificaremos se tem conexão com a 
@@ -86,10 +84,10 @@ class CheckInternet:
             bool: Se tiver conexão ele irá retornar 
             True, mas caso contrario irá retornar False.
         """
-        url = await self.pegar_url(url);
+        url = self.pegar_url(url);
         if(not url):
             return False;
-        return await self.__requisicao(url);
+        return self.__requisicao(url);
     
     def verificar_sync(self) -> bool:
         try:
@@ -98,7 +96,7 @@ class CheckInternet:
         except:
             return False;
     
-    async def verificar(self,quantidade:int = 10) -> bool:
+    def verificar(self,quantidade:int = 10) -> bool:
         """Verificar conexão
         
         Verificação de conexão com internet.
@@ -122,11 +120,14 @@ class CheckInternet:
             self.__requisicao(self.__URL)
             for _ in range(quantidade)
         )
-        lista = await asyncio.gather(*tasks);
-        return await self.__verificar_media(lista);
+        lista = (
+            req 
+            for req in tasks
+        );
+        return self.__verificar_media(lista);
     
     @staticmethod
-    async def __requisicao(url:str) -> bool:
+    def __requisicao(url:str) -> bool:
         """Requisição
 
         Aqui faremos a requisição para um site determinado
@@ -141,15 +142,13 @@ class CheckInternet:
             False se não tiver.
         """
         try:
-            async with aiohttp.ClientSession() as session:
-                    async with session.get(url) as response:
-                        pass;
+            response = requests.get(url);
             return True;
-        except Exception as error:
+        except:
             return False;
     
     @staticmethod
-    async def __verificar_media(lista:List[bool]) -> bool:
+    def __verificar_media(lista:List[bool]) -> bool:
         """Verificar Média
         
         Aqui fazemos a verificação da média dos resultados 

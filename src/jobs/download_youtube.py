@@ -3,18 +3,16 @@
 #-----------------------
 import os
 import re
-import asyncio
 import zipfile
 from time import sleep
+import concurrent.futures
 import moviepy.editor as mp
 from datetime import datetime
 from pytube import Playlist, YouTube
 from typing import List, NoReturn, Union
-from src.jobs.check_internet import CheckInternet
 #-----------------------
 # CONSTANTES
 #-----------------------
-NUMERO_MAXIMO_CONCORRENCIA:int = 10;
 #-----------------------
 # CLASSES
 #-----------------------
@@ -56,7 +54,6 @@ class DownloadYouTube:
             );
             if(self.tempo_total <= 0):
                 self.tempo_total:int = 1*60;
-        self.__check_internet = CheckInternet();
     
     @staticmethod
     def data() -> str:
@@ -88,7 +85,7 @@ class DownloadYouTube:
     
     @staticmethod
     def __remover_arquivo(caminho_do_arquivo:str) -> NoReturn:
-        """Remover
+        """Remover Arquivo
 
         Neste método iremos remover o arquivo baixado anteriormente.
         
@@ -100,7 +97,7 @@ class DownloadYouTube:
     
     @staticmethod
     def __remover_pasta(caminho_da_pasta:str) -> NoReturn:
-        """Remover
+        """Remover Pasta
 
         Neste método iremos remover uma pasta criada anteriormente.
         
@@ -109,45 +106,26 @@ class DownloadYouTube:
         """
         if(os.path.exists(caminho_da_pasta)):
             os.rmdir(caminho_da_pasta);
-
-    async def __verificacao(self,link:str) -> Union[None,str]:
-        """Verificação
-        
-        Aqui faremos a verificação do link.
+    
+    def __pegar_video(self,url:str) -> Union[YouTube,str,None]:
+        """Pegar Video
 
         Args:
-            link (str): Aqui deve conter uma string de um link
-            válido.
+            url (str): Aqui deve conter o url do video do YouTube
+            a ser baixado.
 
         Returns:
-            Union[None,str]: Se o link for verdadeiro irá retornar
-            o próprio, mas se for falso irá retornar None.
+            Union[YouTube,str,None]: Aqui retornaremos o video e o 
+            titulo do video
         """
-        url = await self.__check_internet.pegar_url(url=link);
-        
-        if(not url):
-            return None;
-        
-        conexao = await self.__check_internet.verificar_link(url);
-        
-        if(not conexao):
-            return None;
-        
-        return url;
-    
-    async def __pegar_video(self,link:str) -> Union[YouTube,str,None]:
         # Retorno padrão
         retorno:list = [None,None];
         # Verificar se é playlist
         verificado = re.findall(
-            r"(/watch\?v=[\w-]*)",
-            link
+            r"(/watch\?v=[\w-]*)|(/youtu.be/)",
+            url
         );
         if(not verificado):
-            return retorno;
-        # Verificar a conexão com o link
-        url = await self.__verificacao(link);
-        if(not url):
             return retorno;
         # Pegar a playlist
         youtube = YouTube(url);
@@ -161,11 +139,11 @@ class DownloadYouTube:
         
         return video,titulo;
     
-    async def baixar_video(self,link:str,pasta:str=None) -> List[Union[str,None]]:
+    def baixar_video(self,url:str,pasta:str=None) -> List[Union[str,None]]:
         """Baixar Video
 
         Args:
-            link (str): Aqui deve conter o link do video do YouTube
+            url (str): Aqui deve conter o url do video do YouTube
             a ser baixado.
 
         Returns:
@@ -176,18 +154,19 @@ class DownloadYouTube:
         if(not pasta):
             pasta = f"./data/video/{self.data()}";
         # Pega o video do YouTube
-        [youtube,titulo] = await self.__pegar_video(link);
+        [youtube,titulo] = self.__pegar_video(url);
         youtube: YouTube;
         titulo : str;
         # Baixa o video
         caminho_video = youtube.download(pasta);
+        
         return titulo,caminho_video;
     
-    async def baixar_musica(self,link:str,pasta:str=None) -> List[Union[str,None]]:
+    def baixar_musica(self,url:str,pasta:str=None) -> List[Union[str,None]]:
         """Baixar música
 
         Args:
-            link (str): Aqui deve conter o link da música do YouTube
+            url (str): Aqui deve conter o url da música do YouTube
             a ser baixado.
 
         Returns:
@@ -198,18 +177,26 @@ class DownloadYouTube:
         if(not pasta):
             pasta = f"./data/music/{self.data()}";
         # Pega o video do YouTube
-        [youtube,titulo] = await self.__pegar_video(link);
+        [youtube,titulo] = self.__pegar_video(url);
         youtube: YouTube;
         titulo : str;
         # Baixa o video
         caminho_video = youtube.download(pasta);
         # Transforma em música
-        caminho_musica = await self.converter_to_mp3(caminho_video);
+        caminho_musica = self.__converter_para_mp3(caminho_video);
         
         return titulo,caminho_musica;
     
-    async def converter_to_mp3(self,arq_video:str):
-        name, ext = os.path.splitext(arq_video);
+    def __converter_para_mp3(self,arq_video:str) -> str:
+        """Converter video para música
+
+        Args:
+            arq_video (str): Caminho para o arquivo de video.
+
+        Returns:
+            str: Caminho para o arquivo de audio.
+        """
+        name, _ = os.path.splitext(arq_video);
         out_name = name + ".mp3";
         
         with mp.AudioFileClip(arq_video) as audioclip:
@@ -218,19 +205,25 @@ class DownloadYouTube:
         self.__remover_arquivo(arq_video);
         return out_name;
     
-    async def __pegar_playlist(self,link:str) -> Union[Playlist,str,None]:
+    def __pegar_playlist(self,url:str) -> Union[Playlist,str,None]:
+        """Pegar Video
+
+        Args:
+            url (str): Aqui deve conter o url da playlist do YouTube
+            a ser baixado.
+
+        Returns:
+            Union[YouTube,str,None]: Aqui retornaremos a playlist e o 
+            titulo da playlist.
+        """
         # Retorno padrão
         retorno:list = [None,None];
         # Verificar se é playlist
         verificado = re.findall(
             r"(/playlist\?list=[\w-]*)",
-            link
+            url
         );
         if(not verificado):
-            return retorno;
-        # Verificar a conexão com o link
-        url = await self.__verificacao(link);
-        if(not url):
             return retorno;
         # Pegar a playlist
         playlist   = Playlist(url);
@@ -239,36 +232,45 @@ class DownloadYouTube:
         return playlist,titulo;
     
     def __zipar_playlist(self,pasta:str,arquivo_zip:str) -> NoReturn:
+        """Zipar Playlist
+
+        Args:
+            pasta (str): Pasta para ser zipada.
+            arquivo_zip (str): Nome do arquivo a ser zipada.
+
+        Returns:
+            NoReturn: Não retorna nada.
+        """
         # Pega os arquivos
         arquivos = (
             arquivo
             for _, _, arquivos in os.walk(os.path.abspath(pasta))
                 for arquivo in arquivos
-                    if(".mp" in arquivo)
+                    if(".mp3" in arquivo or ".mp4" in arquivo)
         );
         # Cria o arquivo zip
-        with zipfile.ZipFile(arquivo_zip, 'w', zipfile.ZIP_DEFLATED) as zipar:
+        tipo = zipfile.ZIP_DEFLATED;
+        with zipfile.ZipFile(arquivo_zip, 'w', tipo) as zipar:
             for arquivo in arquivos:
                 zipar.write(f"{pasta}/{arquivo}",arquivo);
                 self.__remover_arquivo(f"{pasta}/{arquivo}");
         self.__remover_pasta(pasta);
     
-    @staticmethod
-    async def __execute_coroutines(tasks:list,max:int = 10) -> NoReturn:
-        dltasks = set();
-        for task in tasks:
-            if(len(dltasks) >= max):
-                _done, dltasks = await asyncio.wait(
-                    dltasks, 
-                    return_when=asyncio.FIRST_COMPLETED
-                );
-            dltasks.add(asyncio.create_task(task));
-        await asyncio.wait(dltasks);
-    
-    async def baixar_playlist_videos(self,link:str) -> str:
+    def baixar_playlist_videos(self,url:str) -> List[Union[str,None]]:
+        """Baixar Playlist de Videos
+
+        Args:
+            url (str): Aqui deve conter o url da playlist do YouTube
+            a ser baixado.
+
+        Returns:
+            List[Union[str,None]]: Aqui retornaremos em 
+            primeiro o título da da playlist e por 
+            segundo o seu caminho ou Nulo.
+        """
         retorno:str = None,None;
         # Pegar a playlist
-        [playlist,titulo] = await self.__pegar_playlist(link);
+        [playlist,titulo] = self.__pegar_playlist(url);
         playlist: Playlist;
         titulo  : str;
         if((not titulo)or(not playlist)):
@@ -278,20 +280,32 @@ class DownloadYouTube:
         arquivo_zip   :str = f'{pasta_primaria}/{titulo}.zip';
         pasta         :str = f"{pasta_primaria}/{titulo}";
         # Cria as sub-rotinas
-        tasks = (
-            self.baixar_video(video,pasta)
-            for video in playlist.video_urls
-        )
-        # Executa as sub-rotinas
-        await self.__execute_coroutines(tasks);
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            tasks = (
+                executor.submit(self.baixar_video,video,pasta)
+                for video in playlist.video_urls
+            )
+            for _ in concurrent.futures.as_completed(tasks):
+                pass;
         # Zipar os arquivos
         self.__zipar_playlist(pasta,arquivo_zip);
         return titulo,arquivo_zip;
     
-    async def baixar_playlist_musicas(self,link:str) -> str:
+    def baixar_playlist_musicas(self,url:str) -> List[Union[str,None]]:
+        """Baixar Playlist de Música
+
+        Args:
+            url (str): Aqui deve conter o url da playlist do YouTube
+            a ser baixado.
+
+        Returns:
+            List[Union[str,None]]: Aqui retornaremos em 
+            primeiro o título da da playlist e por 
+            segundo o seu caminho ou Nulo.
+        """
         retorno:str = None,None;
         # Pegar a playlist
-        [playlist,titulo] = await self.__pegar_playlist(link);
+        [playlist,titulo] = self.__pegar_playlist(url);
         playlist: Playlist;
         titulo  : str;
         if((not titulo)or(not playlist)):
@@ -300,13 +314,29 @@ class DownloadYouTube:
         pasta_primaria:str = f"./data/playlist/music/{self.data()}";
         arquivo_zip   :str = f'{pasta_primaria}/{titulo}.zip';
         pasta         :str = f"{pasta_primaria}/{titulo}";
-        # Cria as sub-rotinas
-        tasks = (
-            self.baixar_musica(video,pasta)
-            for video in playlist.video_urls
-        )
-        # Executa as sub-rotinas
-        await self.__execute_coroutines(tasks);
+        # Baixa os videos
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            tasks = (
+                executor.submit(self.baixar_video,video,pasta)
+                for video in playlist.video_urls
+            )
+            for _ in concurrent.futures.as_completed(tasks):
+                pass;
+        # Pega os videos
+        videos = (
+            f"{pasta}/{arquivo}"
+            for _, _, arquivos in os.walk(os.path.abspath(pasta))
+                for arquivo in arquivos
+                    if(".mp4" in arquivo)
+        );
+        # Transforma em MP3
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            tasks = (
+                executor.submit(self.__converter_para_mp3,video)
+                for video in videos
+            )
+            for _ in concurrent.futures.as_completed(tasks):
+                pass;
         # Zipar os arquivos
         self.__zipar_playlist(pasta,arquivo_zip);
         return titulo,arquivo_zip;
