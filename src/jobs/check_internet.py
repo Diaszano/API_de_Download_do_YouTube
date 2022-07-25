@@ -89,13 +89,6 @@ class CheckInternet:
             return False;
         return self.__requisicao(url);
     
-    def verificar_sync(self) -> bool:
-        try:
-            response = requests.get(self.__URL);
-            return True;
-        except:
-            return False;
-    
     def verificar(self,quantidade:int = 10) -> bool:
         """Verificar conexão
         
@@ -116,14 +109,13 @@ class CheckInternet:
         elif(quantidade > self.__MAX):
             quantidade = self.__MAX;
         
-        tasks = (
-            self.__requisicao(self.__URL)
-            for _ in range(quantidade)
-        )
-        lista = (
-            req 
-            for req in tasks
-        );
+        lista:list = [];
+            
+        for _ in range(quantidade):
+            lista.append(
+                self.__requisicao(self.__URL)
+            );
+        
         return self.__verificar_media(lista);
     
     @staticmethod

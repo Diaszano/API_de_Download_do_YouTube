@@ -26,8 +26,8 @@ from fastapi.middleware.cors import CORSMiddleware
 #-----------------------
 # FastApi
 #-----------------------
-ping = CheckInternet();
-result_ping = ping.verificar_sync();
+ping        = CheckInternet();
+result_ping = ping.verificar();
 
 if(not result_ping):
     sys.exit(0);
