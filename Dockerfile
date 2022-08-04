@@ -11,7 +11,6 @@ RUN apt-get update && \
     apt-get install -y git
 RUN python -m pip install --upgrade pip
 RUN pip install -r requirements.txt 
-RUN python -m pip install git+https://github.com/pytube/pytube
 
 
 COPY . .

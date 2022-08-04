@@ -44,7 +44,7 @@ class DownloadYouTube:
         self.__minutos :int = minutos;
         self.__segundos:int = segundos;
         if((dias+horas+minutos+segundos) <= 0):
-            self.tempo_total:int = 15*60;
+            self.tempo_total:int = 1*60;
         else:
             self.tempo_total:int = (
                 (self.__segundos) +
@@ -53,7 +53,7 @@ class DownloadYouTube:
                 (60*60*24*self.__dias)
             );
             if(self.tempo_total <= 0):
-                self.tempo_total:int = 15*60;
+                self.tempo_total:int = 1*60;
     
     @staticmethod
     def data() -> str:
