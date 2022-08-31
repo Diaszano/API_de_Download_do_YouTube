@@ -38,7 +38,7 @@ async def download_video(
         MP4: retorna o video.
     """
     try:
-        nome,arquivo = download_youtube.baixar_video(link);
+        nome,arquivo = await download_youtube.baixar_video(link);
     except Exception as error:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -77,7 +77,7 @@ async def download_musica(
     background_tasks: BackgroundTasks
 ):
     try:
-        nome,arquivo = download_youtube.baixar_musica(link);
+        nome,arquivo = await download_youtube.baixar_musica(link);
     except Exception as error:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -116,7 +116,7 @@ async def download_playlist_videos(
     background_tasks: BackgroundTasks
 ):
     try:
-        nome,arquivo = download_youtube.baixar_playlist_videos(link);
+        nome,arquivo = await download_youtube.baixar_playlist_videos(link);
     except Exception as error:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -154,7 +154,8 @@ async def download_playlist_musicas(
     background_tasks: BackgroundTasks
 ):
     try:
-        nome,arquivo = download_youtube.baixar_playlist_musicas(link);
+        
+        nome,arquivo = await download_youtube.baixar_playlist_musicas(link);
     except Exception as error:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

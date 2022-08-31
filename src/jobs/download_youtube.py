@@ -8,8 +8,9 @@ from time import sleep
 import concurrent.futures
 import moviepy.editor as mp
 from datetime import datetime
+from src.tools.tools import to_async
 from pytube import Playlist, YouTube
-from typing import List, NoReturn, Union
+from typing import Coroutine, Any
 #-----------------------
 # CONSTANTES
 #-----------------------
@@ -69,7 +70,7 @@ class DownloadYouTube:
         time = now.strftime("%d-%m-%Y_%H:%M:%S");
         return time;
     
-    def remover(self,caminho_do_arquivo:str) -> NoReturn:
+    def remover(self,caminho_do_arquivo:str) -> None:
         """Remover
 
         Neste método iremos remover o arquivo baixado anteriormente.
@@ -84,7 +85,7 @@ class DownloadYouTube:
             os.rmdir(os.path.dirname(caminho_do_arquivo));
     
     @staticmethod
-    def __remover_arquivo(caminho_do_arquivo:str) -> NoReturn:
+    def __remover_arquivo(caminho_do_arquivo:str) -> None:
         """Remover Arquivo
 
         Neste método iremos remover o arquivo baixado anteriormente.
@@ -96,7 +97,7 @@ class DownloadYouTube:
             os.remove(caminho_do_arquivo);
     
     @staticmethod
-    def __remover_pasta(caminho_da_pasta:str) -> NoReturn:
+    def __remover_pasta(caminho_da_pasta:str) -> None:
         """Remover Pasta
 
         Neste método iremos remover uma pasta criada anteriormente.
@@ -107,7 +108,7 @@ class DownloadYouTube:
         if(os.path.exists(caminho_da_pasta)):
             os.rmdir(caminho_da_pasta);
     
-    def __pegar_video(self,url:str) -> Union[YouTube,str,None]:
+    def __pegar_video(self,url:str) -> tuple[YouTube,str]:
         """Pegar Video
 
         Args:
@@ -139,7 +140,21 @@ class DownloadYouTube:
         
         return video,titulo;
     
-    def baixar_video(self,url:str,pasta:str=None) -> List[Union[str,None]]:
+    @to_async(executor=None)
+    def baixar_video(self,url:str,pasta:str=None) -> Coroutine[Any,Any,tuple[str,str]]:
+        """Baixar Video
+
+        Args:
+            url (str): Aqui deve conter o url do video do YouTube
+            a ser baixado.
+
+        Returns:
+            List[str|None]: Aqui retornaremos em primeiro o título do 
+            video e por segundo o seu caminho ou Nulo.
+        """
+        return self.__baixar_video(url=url,pasta=pasta);
+    
+    def __baixar_video(self,url:str,pasta:str=None) -> tuple[str,str]:
         """Baixar Video
 
         Args:
@@ -162,7 +177,21 @@ class DownloadYouTube:
         
         return titulo,caminho_video;
     
-    def baixar_musica(self,url:str,pasta:str=None) -> List[Union[str,None]]:
+    @to_async(executor=None)
+    def baixar_musica(self,url:str,pasta:str=None) -> Coroutine[Any,Any,tuple[str,str]]:
+        """Baixar música
+
+        Args:
+            url (str): Aqui deve conter o url da música do YouTube
+            a ser baixado.
+
+        Returns:
+            List[str|None]: Aqui retornaremos em primeiro o título da 
+            música e por segundo o seu caminho ou Nulo.
+        """
+        return self.__baixar_musica(url=url,pasta=pasta);
+    
+    def __baixar_musica(self,url:str,pasta:str=None) -> tuple[str,str]:
         """Baixar música
 
         Args:
@@ -205,7 +234,7 @@ class DownloadYouTube:
         self.__remover_arquivo(arq_video);
         return out_name;
     
-    def __pegar_playlist(self,url:str) -> Union[Playlist,str,None]:
+    def __pegar_playlist(self,url:str) -> tuple[str,str]:
         """Pegar Video
 
         Args:
@@ -231,7 +260,7 @@ class DownloadYouTube:
         
         return playlist,titulo;
     
-    def __zipar_playlist(self,pasta:str,arquivo_zip:str) -> NoReturn:
+    def __zipar_playlist(self,pasta:str,arquivo_zip:str) -> None:
         """Zipar Playlist
 
         Args:
@@ -256,7 +285,8 @@ class DownloadYouTube:
                 self.__remover_arquivo(f"{pasta}/{arquivo}");
         self.__remover_pasta(pasta);
     
-    def baixar_playlist_videos(self,url:str) -> List[Union[str,None]]:
+    @to_async(executor=None)
+    def baixar_playlist_videos(self,url:str) -> Coroutine[Any,Any,tuple[str,str]]:
         """Baixar Playlist de Videos
 
         Args:
@@ -282,7 +312,11 @@ class DownloadYouTube:
         # Cria as sub-rotinas
         with concurrent.futures.ThreadPoolExecutor() as executor:
             tasks = (
-                executor.submit(self.baixar_video,video,pasta)
+                executor.submit(
+                    self.__baixar_video,
+                    video,
+                    pasta
+                )
                 for video in playlist.video_urls
             )
             for _ in concurrent.futures.as_completed(tasks):
@@ -291,7 +325,8 @@ class DownloadYouTube:
         self.__zipar_playlist(pasta,arquivo_zip);
         return titulo,arquivo_zip;
     
-    def baixar_playlist_musicas(self,url:str) -> List[Union[str,None]]:
+    @to_async(executor=None)
+    def baixar_playlist_musicas(self,url:str) -> Coroutine[Any,Any,tuple[str,str]]:
         """Baixar Playlist de Música
 
         Args:
@@ -317,7 +352,7 @@ class DownloadYouTube:
         # Baixa os videos
         with concurrent.futures.ThreadPoolExecutor() as executor:
             tasks = (
-                executor.submit(self.baixar_video,video,pasta)
+                executor.submit(self.__baixar_video,video,pasta)
                 for video in playlist.video_urls
             )
             for _ in concurrent.futures.as_completed(tasks):
